@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Login Blocked</title>
+    <meta http-equiv="refresh" content="60;url=/login">
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f2f2f2;
+            text-align: center;
+            padding-top: 20%;
+        }
+        h1 {
+            color: #cc0000;
+        }
+        #countdown {
+            font-size: 2em;
+            color: #555;
+        }
+    </style>
+</head>
+<body>
+    <h1>Too Many Login Attempts</h1>
+    <p>Please wait before trying again.</p>
+    <p id="countdown">Redirecting to login in 01:00...</p>
+
+    <script>
+        let seconds = 60; // or 120 for 2 minutes
+        const countdown = document.getElementById("countdown");
+
+        const interval = setInterval(() => {
+            seconds--;
+            let minutes = Math.floor(seconds / 60);
+            let sec = seconds % 60;
+            countdown.textContent = `Redirecting to login in ${minutes}:${sec < 10 ? '0' + sec : sec}...`;
+
+            if (seconds <= 0) {
+                clearInterval(interval);
+            }
+        }, 1000);
+    </script>
+</body>
+</html>

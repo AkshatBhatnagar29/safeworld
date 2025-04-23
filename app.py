@@ -5,7 +5,7 @@ from werkzeug.security import generate_password_hash, check_password_hash
 from dotenv import load_dotenv
 from flask_cors import CORS
 import re
-
+from datetime import datetime, timedelta
 load_dotenv()
 
 app = Flask(__name__)
@@ -81,7 +81,7 @@ def signup():
                 VALUES (%s, %s, %s, %s, %s, %s)
             """, (f_name or None, m_name or None, l_name or None, email, phone_number, hashed_password))
             
-            db.commit()
+            db.commit() 
             print("User successfully added to database")
             flash("Signup successful! Please log in.")
             cursor.close()
@@ -98,40 +98,72 @@ def signup():
     
     # GET request - show empty form
     return render_template('signup.html')
+from flask import Flask, request, render_template, redirect, url_for, flash, session
+from datetime import datetime
+import mysql.connector
+from werkzeug.security import check_password_hash
+
 @app.route('/login', methods=['GET', 'POST'])
 def login():
     if request.method == 'POST':
         email = request.form.get('email')
         password = request.form.get('password')
-        
+
         if not email or not password:
             flash("Email and password are required")
             return render_template('login.html')
-        
-        # Get fresh database connection
+
         db = get_db_connection()
         cursor = db.cursor(dictionary=True)
-        
+
         cursor.execute("SELECT * FROM users WHERE email = %s", (email,))
         user = cursor.fetchone()
-        
-        cursor.close()
-        db.close()
-        
+
         if user:
+            user_id = user['user_id']
+            ip = request.remote_addr
+            now = datetime.now()
+
+            cursor.execute("""
+                SELECT login_time FROM user_login_history
+                WHERE user_id = %s
+                ORDER BY login_time DESC
+            """, (user_id,))
+            rows = cursor.fetchall()
+
+            fail_count = 0
+            for row in rows:
+                login_time = row['login_time']
+                if (now - login_time).total_seconds() <= 120:
+                    fail_count += 1
+                else:
+                    break 
+
+            if fail_count >= 5:
+                flash("Too many failed login attempts. Please wait 1 minute before trying again.")
+                return render_template('wait.html')
+
+          
             if check_password_hash(user['password_hash'], password):
-                session['user_id'] = user['user_id']
+                session['user_id'] = user_id
+                cursor.execute("""INSERT INTO user_login_history (user_id, ip_address,success) VALUES (%s, %s,1)  """, (user_id, ip))
                 flash("Login successful!")
                 return redirect(url_for('dashboard'))
             else:
+           
+                cursor.execute("""
+                    INSERT INTO user_login_history (user_id, ip_address)
+                    VALUES (%s, %s)
+                """, (user_id, ip))
+                db.commit()
                 flash("Incorrect password.")
                 return render_template('login.html')
         else:
-            flash("User not found. Please sign up.")
+            flash("User not found.")
             return render_template('login.html')
-    
-    # GET request - show login form
+
     return render_template('login.html')
+
 
 # Dashboard route
 @app.route('/dashboard')
@@ -156,7 +188,10 @@ def dashboard():
         return redirect(url_for('login'))
         
     return render_template ('index.html', user=user)
-
+@app.route('/wait')
+def wait():
+    
+    return render_template('wait.html')
 # Logout route
 @app.route('/logout')
 def logout():
@@ -164,5 +199,11 @@ def logout():
     flash("You have been logged out")
     return redirect(url_for('login'))
 
+
+
 if __name__ == '__main__':
     app.run(debug=True)
+
+
+
+# blacklisted ip block in login and geolocation tag leeft ################################
