@@ -5,30 +5,40 @@
     <meta charset="UTF-8">
     <title>Add Money</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+    <script src="https://cdn.tailwindcss.com"></script>
 </head>
-<body class="p-6">
-    <h2 class="text-xl font-semibold mb-4">Add Money</h2>
+<body class="bg-gradient-to-br from-green-50 to-blue-100 min-h-screen flex items-center justify-center p-6">
+    <div class="bg-white shadow-lg rounded-2xl p-8 w-full max-w-md">
+        <h2 class="text-2xl font-bold text-gray-800 mb-6 text-center">💸 Add Money</h2>
 
-    {% with messages = get_flashed_messages(with_categories=true) %}
-    {% if messages %}
-        <ul class="mb-4">
-        {% for category, message in messages %}
-            <li class="text-{{ 'red-600' if category == 'error' else 'green-600' }}">{{ message }}</li>
-        {% endfor %}
-        </ul>
-    {% endif %}
-    {% endwith %}
+        {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            <ul class="mb-4">
+            {% for category, message in messages %}
+                <li class="text-sm font-medium text-{{ 'red-600' if category == 'error' else 'green-600' }} bg-{{ 'red-100' if category == 'error' else 'green-100' }} px-3 py-2 rounded mb-2">
+                    {{ message }}
+                </li>
+            {% endfor %}
+            </ul>
+        {% endif %}
+        {% endwith %}
 
-    <form action="{{ url_for('add_money') }}" method="POST" class="space-y-4">
-        <div>
-            <label for="amount" class="block font-medium">Amount (₹):</label>
-            <input type="number" name="amount" id="amount" min="1" step="0.01" required
-                class="w-full px-3 py-2 border rounded-md">
-        </div>
-        <button type="submit"
-            class="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700">Add Money</button>
-    </form>
+        <form action="{{ url_for('add_money') }}" method="POST" class="space-y-5">
+            <div>
+                <label for="amount" class="block text-sm font-semibold text-gray-700 mb-1">Amount (₹):</label>
+                <input type="number" name="amount" id="amount" min="1" step="0.01" required
+                    class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-400 focus:outline-none transition duration-200">
+            </div>
+            <button type="submit"
+                class="w-full bg-green-600 hover:bg-green-700 text-white py-2 rounded-lg font-semibold transition duration-200">
+                ➕ Add Money
+            </button>
+        </form>
 
-    <a href="{{ url_for('dashboard') }}" class="inline-block mt-4 text-blue-600 hover:underline">Back to Dashboard</a>
+        <a href="{{ url_for('dashboard') }}"
+           class="block text-center mt-6 text-sm text-blue-600 hover:underline transition duration-150">
+            ← Back to Dashboard
+        </a>
+    </div>
 </body>
 </html>

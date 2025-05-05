@@ -7,7 +7,6 @@ from dotenv import load_dotenv
 from flask_cors import CORS
 import requests
 import pandas as pd
-from sklearn.cluster import DBSCAN
 from datetime import datetime, timedelta
 import ipaddress
 import re
@@ -260,42 +259,73 @@ def add_money():
     if 'user_id' not in session:
         flash("Please log in to add money")
         return redirect(url_for('login'))
-
+    
+    # Debug - Check if user_id is properly set
+    print(f"Session user_id: {session.get('user_id')}")
+    
     if request.method == 'POST':
         try:
             amount = float(request.form.get('amount', 0))
             if amount <= 0:
                 flash("Amount must be greater than 0", "error")
                 return redirect(url_for('add_money'))
-
+            
             db = get_db_connection()
             cursor = db.cursor()
-
-            cursor.execute("UPDATE users SET User_Balance = User_Balance + %s WHERE user_id = %s", (amount, session['user_id']))
-            db.commit()
-
+            
+            # First check if the user exists
+            cursor.execute("SELECT user_id FROM users WHERE user_id = %s", (session['user_id'],))
+            user = cursor.fetchone()
+            if not user:
+                flash("User not found", "error")
+                return redirect(url_for('add_money'))
+            
+            # Debug - Print before balance
+            cursor.execute("SELECT User_Balance FROM users WHERE user_id = %s", (session['user_id'],))
+            before_balance = cursor.fetchone()[0]
+            print(f"Before update: User {session['user_id']} balance = {before_balance}")
+            
+            # Update the balance
+            cursor.execute("UPDATE users SET User_Balance = User_Balance + %s WHERE user_id = %s", 
+                          (amount, session['user_id']))
+            
+            # Check if any rows were affected
+            rows_affected = cursor.rowcount
+            print(f"Rows affected by UPDATE: {rows_affected}")
+            
+            if rows_affected == 0:
+                db.rollback()
+                flash("Failed to update balance: No rows affected", "error")
+                return redirect(url_for('add_money'))
+                
+            # Debug - Print after balance
+            cursor.execute("SELECT User_Balance FROM users WHERE user_id = %s", (session['user_id'],))
+            after_balance = cursor.fetchone()[0]
+            print(f"After update: User {session['user_id']} balance = {after_balance}")
+            
             txn_id = generate_transaction_id()
             cursor.execute("""
                   INSERT INTO transaction_table (transaction_id, sender_id, receiver_id, amount, transaction_type, time, ip_address_sender)
                     VALUES (%s, %s, %s, %s, 'add_money', NOW(), %s)
             """, (txn_id, session['user_id'], session['user_id'], amount, request.remote_addr))
-
+            
+            # Explicitly commit the transaction
             db.commit()
-
+            print("Transaction committed successfully")
+            
             flash(f"₹{amount:.2f} added successfully!", "message")
             return redirect(url_for('dashboard'))
         except Exception as e:
             db.rollback()
+            print(f"Exception in add_money: {e}")
             flash(f"Failed to add money: {e}", "error")
         finally:
             cursor.close()
             db.close()
-
+    
     return render_template('add_money.html')
 
 
-import hashlib
-import random
 
 def process_transaction(sender_id, receiver_id, amount, transaction_type, sender_ip, receiver_ip, location):
     db = get_db_connection()
