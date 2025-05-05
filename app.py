@@ -42,14 +42,12 @@ def home():
 
 
 
-# Signup Route (fixed duplicate decorators)
 @app.route('/signup', methods=['GET', 'POST'])
 @app.route('/signup', methods=['GET', 'POST'])
 def signup():
     if request.method == 'POST':
         print(request.form)  
         
-        # Safely get all form values
         f_name = request.form.get('f_name', '')
         m_name = request.form.get('m_name', '')
         l_name = request.form.get('l_name', '')
@@ -68,15 +66,12 @@ def signup():
             flash("Phone number is too long. Maximum 15 digits allowed.")
             return render_template('signup.html', form_data=request.form)
         
-        # Hash password
         hashed_password = generate_password_hash(password)
         
-        # Get fresh database connection
         db = get_db_connection()
         cursor = db.cursor(dictionary=True)
         
         try:
-            # Check if user exists
             print("Checking if user exists...")
             cursor.execute("SELECT * FROM users WHERE email = %s OR phone_number = %s", (email, phone_number))
             existing_user = cursor.fetchone()
@@ -88,7 +83,6 @@ def signup():
                 db.close()
                 return render_template('signup.html', form_data=request.form)
             
-            # Insert new user
             print("Attempting to insert user...")
             cursor.execute("""
                 INSERT INTO users (f_name, m_name, l_name, email, phone_number, password_hash)
@@ -110,14 +104,13 @@ def signup():
             db.close()
             return render_template('signup.html', form_data=request.form)
     
-    # GET request - show empty form
     return render_template('signup.html')
 
 def get_ipinfo_location(ip):
     try:
         api_key = "517e0433ce08fb"  
         res = requests.get(f"https://ipinfo.io/{ip}/json?token={api_key}")
-        print(f"Requesting IPinfo for IP: {ip}")  # Helpful debug
+        print(f"Requesting IPinfo for IP: {ip}")  
         if res.status_code == 200:
             data = res.json()
             print("IPinfo data:", data)
@@ -131,12 +124,12 @@ def get_ipinfo_location(ip):
 
 def get_location_from_form_or_ip():
     location = ''
-    user_ip = request.remote_addr  # Use the updated IP retrieval function
+    user_ip = request.remote_addr  
     city, country = get_ipinfo_location(user_ip)
     if city or country:
         location = f"{city}, {country}"
     else:
-        location = "Unknown Location"  # Default fallback
+        location = "Unknown Location"  
     print(f"Location: {location}")
     return location
 
@@ -156,13 +149,12 @@ def login():
 
         ip = request.headers.get('X-Forwarded-For', request.remote_addr).split(',')[0].strip()
 
-        # ✅ Step 1: Validate IP format
+        
         try:
             ip_obj = ipaddress.ip_address(ip)
         except ValueError:
             return render_template('wait.html')
 
-        # ✅ Step 2: Fetch user and location info
         cursor.execute("SELECT * FROM users WHERE email = %s", (email,))
         user = cursor.fetchone()
         city, country = get_ipinfo_location(ip)
@@ -171,7 +163,6 @@ def login():
             user_id = user['user_id']
             now = datetime.now()
 
-            # ✅ Step 3: Check recent successful login for suspicious location
             cursor.execute("""
                 SELECT city, country FROM user_login_history 
                 WHERE user_id = %s AND success = 1 AND login_time >= NOW() - INTERVAL 5 MINUTE 
@@ -184,14 +175,12 @@ def login():
                     flash("Suspicious login: You're logging in from a new location within 5 minutes. Try again later.")
                     return render_template('block.html')
 
-            # ✅ Step 4: Check blacklisted IPs
             cursor.execute("SELECT * FROM blacklisted_ip WHERE ip_address = %s", (ip,))
             blacklist = cursor.fetchone()
             if blacklist:
                 flash("Your IP address is blacklisted. Please contact support.")
                 return render_template('block.html')
 
-            # ✅ Step 5: Check recent failed login attempts
             cursor.execute("""
                 SELECT login_time FROM user_login_history
                 WHERE user_id = %s AND success = 0
@@ -211,10 +200,9 @@ def login():
                 flash("Too many failed login attempts. Please wait 1 minute before trying again.")
                 return render_template('wait.html')
 
-            # ✅ Step 6: Check password and set session
             if check_password_hash(user['password_hash'], password):
                 session['user_id'] = user_id
-                print("Session user_id set to:", session.get('user_id'))  # Debug print
+                print("Session user_id set to:", session.get('user_id'))  
                 su = 1
                 cursor.execute("""
                     INSERT INTO user_login_history (user_id, ip_address, city, country, success) 
@@ -283,18 +271,16 @@ def add_money():
             db = get_db_connection()
             cursor = db.cursor()
 
-            # Update user balance
             cursor.execute("UPDATE users SET User_Balance = User_Balance + %s WHERE user_id = %s", (amount, session['user_id']))
             db.commit()
 
-            # Insert transaction record (without transaction_id)
             txn_id = generate_transaction_id()
             cursor.execute("""
                   INSERT INTO transaction_table (transaction_id, sender_id, receiver_id, amount, transaction_type, time, ip_address_sender)
                     VALUES (%s, %s, %s, %s, 'add_money', NOW(), %s)
             """, (txn_id, session['user_id'], session['user_id'], amount, request.remote_addr))
 
-            db.commit()#-------------------------------------------------------------------------------------------
+            db.commit()
 
             flash(f"₹{amount:.2f} added successfully!", "message")
             return redirect(url_for('dashboard'))
@@ -316,7 +302,6 @@ def process_transaction(sender_id, receiver_id, amount, transaction_type, sender
     cursor = db.cursor(dictionary=True)
 
     try:
-        # 1. Check sender balance
         cursor.execute("SELECT User_Balance FROM users WHERE user_id = %s", (sender_id,))
         row = cursor.fetchone()
         if not row:
@@ -324,8 +309,7 @@ def process_transaction(sender_id, receiver_id, amount, transaction_type, sender
         if amount > float(row['User_Balance']):
             return "Transaction Failed: Insufficient balance"
 
-        # 2. Perform transaction
-        # Generate a unique transaction_id using UUID (truncate to 10 characters)
+       
         transaction_id = str(uuid.uuid4()).replace('-', '')[:10]
 
         cursor.execute(
@@ -343,30 +327,27 @@ def process_transaction(sender_id, receiver_id, amount, transaction_type, sender
         )
         db.commit()
 
-        # 3. Fetch recent amounts for outlier detection
+   
         cursor.execute(
             "SELECT amount FROM transaction_table WHERE sender_id = %s ORDER BY time DESC LIMIT 30;",
             (sender_id,)
         )
         amounts = [float(r['amount']) for r in cursor.fetchall()]
 
-        # 4. Outlier detection (IQR)
+       
         if len(amounts) >= 5:
             series = pd.Series(amounts)
             q1, q3 = series.quantile([0.25, 0.75])
             iqr = q3 - q1
             upper = q3 + 1.5 * iqr
             if amount > upper:
-                # Generate a new transaction_id for the fraud transaction
                 fraud_transaction_id = str(uuid.uuid4()).replace('-', '')[:10]
                 
-                # Insert fraud transaction with a different transaction_id
                 cursor.execute(
                     "INSERT INTO transaction_table (transaction_id, sender_id, receiver_id, amount, transaction_type, time, ip_address_sender, ip_address_receiver, location) "
                     "VALUES (%s, %s, %s, %s, 'fraud', NOW(), %s, %s, %s)",
                     (fraud_transaction_id, sender_id, receiver_id, amount, sender_ip, receiver_ip, location)
                 )
-                # Insert fraud report (using the original transaction_id for reference)
                 cursor.execute(
                     "INSERT INTO fraud_report (report_id, transaction_id, report_details, report_status, reported_at) "
                     "VALUES (CONCAT(SUBSTRING(MD5(RAND()), 1, 5)), %s, %s, 'Pending', NOW());",
@@ -418,7 +399,7 @@ def transaction_page():
         )
         if "Success" in message:
             flash("Transaction Successful!")
-            return redirect('/dashboard')  # ✅ Redirect here
+            return redirect('/dashboard')  
         else:
             return render_template('pro_transaction.html', message=message)
     db.commit()
