@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard - SafeWorld</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+        .sidebar {
+            transition: transform 0.3s ease-in-out;
+        }
+        /* Ensure buttons in the sidebar take full width and have consistent styling */
+        .sidebar ul li a.button {
+            display: block; /* Make buttons take full width of the li */
+            text-align: center; /* Center the text inside buttons */
+        }
+        /* Override Tailwind's default padding for buttons to ensure consistency */
+        .sidebar ul li a.button {
+            padding: 0.5rem 1rem; /* Consistent padding for buttons */
+        }
+        @media (max-width: 768px) {
+            .sidebar {
+                transform: translateX(-100%);
+            }
+            .sidebar.open {
+                transform: translateX(0);
+            }
+        }
+    </style>
+</head>
+<body class="bg-gray-100">
+    <!-- Navbar -->
+    <nav class="bg-blue-600 text-white p-4 shadow-md">
+        <div class="container mx-auto flex justify-between items-center">
+            <div class="text-xl font-bold">SafeWorld</div>
+            <div class="flex items-center space-x-4">
+                <span class="hidden md:block">
+                    Welcome, {{ user.f_name or '' }} {{ user.l_name or '' }}
+                </span>
+                <a href="{{ url_for('logout') }}" class="hover:underline">Logout</a>
+                <button id="menu-toggle" class="md:hidden focus:outline-none">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16m-7 6h7"></path>
+                    </svg>
+                </button>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main content -->
+    <div class="container mx-auto flex flex-col md:flex-row mt-6 space-y-6 md:space-y-0 md:space-x-6">
+        <!-- Sidebar -->
+        <aside id="sidebar" class="sidebar bg-white p-6 rounded-lg shadow-md w-full md:w-1/4">
+            <h2 class="text-lg font-semibold mb-4">Menu</h2>
+            <ul class="space-y-2">
+                <li><a href="{{ url_for('dashboard') }}" class="text-blue-600 hover:underline">Dashboard</a></li>
+                <li><a href="{{ url_for('view_transactions') }}" class="text-blue-600 hover:underline">Transactions</a></li>
+                <li><a href="{{ url_for('logout') }}" class="text-blue-600 hover:underline">Logout</a></li>
+                <li>
+                    <a href="{{ url_for('fraud_transactions') }}" class="button bg-red-600 text-white rounded hover:bg-red-700">
+                        Fraud Transactions
+                    </a>
+                </li>
+                <li>
+                    <a href="{{ url_for('add_money') }}" class="button bg-green-500 text-white rounded hover:bg-green-600">
+                        Add Money
+                    </a>
+                </li>
+            </ul>
+        </aside>
+
+        <!-- Dashboard content -->
+        <main class="bg-white p-6 rounded-lg shadow-md w-full md:w-3/4">
+            <h1 class="text-2xl font-bold mb-6">Dashboard</h1>
+
+            <!-- Flash messages -->
+            {% with messages = get_flashed_messages(with_categories=true) %}
+                {% if messages %}
+                    <div class="mb-4">
+                        {% for category, message in messages %}
+                            <div class="p-4 rounded {{ 'bg-green-100 text-green-700' if category == 'message' else 'bg-red-100 text-red-700' }}">
+                                {{ message }}
+                            </div>
+                        {% endfor %}
+                    </div>
+                {% endif %}
+            {% endwith %}
+
+            <!-- User information -->
+            <div class="mb-6">
+                <h2 class="text-xl font-semibold mb-2">User Information</h2>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <p><strong>Full Name:</strong> {{ user.f_name or '' }} {{ user.m_name or '' }} {{ user.l_name or '' }}</p>
+                        <p><strong>Email:</strong> {{ user.email or 'N/A' }}</p>
+                        <p><strong>Phone Number:</strong> {{ user.phone_number or 'N/A' }}</p>
+                    </div>
+                    <div>
+                        <p><strong>Current Balance:</strong> ₹{{ user.User_Balance|default(0.00, true)|float|round(2) }}</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Quick actions -->
+            <div class="mb-6">
+                <h2 class="text-xl font-semibold mb-2">Quick Actions</h2>
+                <div class="flex space-x-4">
+                    <a href="{{ url_for('view_transactions') }}" class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">View Transactions</a>
+                    <a href="{{url_for('transaction_page')}}" class="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700">Make Transfer</a>
+                </div>
+            </div>
+
+            <!-- Recent transactions placeholder -->
+            <div>
+                <h2 class="text-xl font-semibold mb-2">Recent Transactions</h2>
+                <p class="text-gray-600">View your transaction history <a href="{{ url_for('view_transactions') }}" class="text-blue-600 hover:underline">here</a>.</p>
+            </div>
+        </main>
+    </div>
+
+    <!-- Footer -->
+    <footer class="bg-gray-800 text-white p-4 mt-6">
+        <div class="container mx-auto text-center">
+            © 2025 SafeWorld. All rights reserved.
+        </div>
+    </footer>
+
+    <!-- Mobile menu toggle script -->
+    <script>
+        const menuToggle = document.getElementById('menu-toggle');
+        const sidebar = document.getElementById('sidebar');
+        menuToggle.addEventListener('click', () => {
+            sidebar.classList.toggle('open');
+        });
+    </script>
+</body>
+</html>

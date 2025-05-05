@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Transactions - SafeWorld</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-100">
+    <!-- Navbar -->
+    <nav class="bg-blue-600 text-white p-4 shadow-md">
+        <div class="container mx-auto flex justify-between items-center">
+            <div class="text-xl font-bold">SafeWorld</div>
+            <div class="flex items-center space-x-4">
+                <a href="{{ url_for('dashboard') }}" class="hover:underline">Dashboard</a>
+                <a href="{{ url_for('logout') }}" class="hover:underline">Logout</a>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main content -->
+    <div class="container mx-auto mt-6">
+        <h1 class="text-2xl font-bold mb-6">Transaction History</h1>
+
+        <!-- Flash messages -->
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                <div class="mb-4">
+                    {% for category, message in messages %}
+                        <div class="p-4 rounded {{ 'bg-green-100 text-green-700' if category == 'message' else 'bg-red-100 text-red-700' }}">
+                            {{ message }}
+                        </div>
+                    {% endfor %}
+                </div>
+            {% endif %}
+        {% endwith %}
+
+        <!-- Transactions table -->
+        {% if transactions %}
+            <div class="bg-white p-6 rounded-lg shadow-md">
+                <table class="w-full text-left">
+                    <thead>
+                        <tr class="bg-gray-200">
+                            <th class="p-2">Date</th>
+                            <th class="p-2">Amount</th>
+                            <th class="p-2">Type</th>
+                            <th class="p-2">Sender IP</th>
+                            <th class="p-2">Receiver IP</th>
+                            <th class="p-2">Location</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for tx in transactions %}
+                            <tr class="border-b">
+                                <td class="p-2">{{ tx.time }}</td>
+                                <td class="p-2">₹{{ tx.amount|round(2) }}</td>
+                                <td class="p-2">{{ tx.transaction_type }}</td>
+                                <td class="p-2">{{ tx.ip_address_sender or 'N/A' }}</td>
+                                <td class="p-2">{{ tx.ip_address_receiver or 'N/A' }}</td>
+                                <td class="p-2">{{ tx.location or 'N/A' }}</td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        {% else %}
+            <p class="text-gray-600">No transactions found.</p>
+        {% endif %}
+    </div>
+
+    <!-- Footer -->
+    <footer class="bg-gray-800 text-white p-4 mt-6">
+        <div class="container mx-auto text-center">
+            © 2025 SafeWorld. All rights reserved.
+        </div>
+    </footer>
+</body>
+</html>

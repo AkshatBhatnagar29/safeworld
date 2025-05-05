@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Fraudulent Transactions</title>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+</head>
+<body class="bg-gray-100 font-sans">
+
+    <div class="max-w-6xl mx-auto p-6">
+        <h1 class="text-3xl font-bold mb-6 text-center text-red-700">⚠️ Fraudulent Transactions</h1>
+
+        {% if frauds %}
+            <div class="bg-white shadow-lg rounded-lg overflow-hidden">
+                <table class="min-w-full text-sm">
+                    <thead class="bg-red-600 text-white">
+                        <tr>
+                            <th class="py-3 px-4 text-left">Report ID</th>
+                            <th class="py-3 px-4 text-left">Transaction ID</th>
+                            <th class="py-3 px-4 text-left">Details</th>
+                            <th class="py-3 px-4 text-left">Status</th>
+                            <th class="py-3 px-4 text-left">Reported At</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for fraud in frauds %}
+                            <tr class="border-b hover:bg-red-50">
+                                <td class="py-3 px-4 font-mono">{{ fraud.report_id }}</td>
+                                <td class="py-3 px-4">{{ fraud.transaction_id }}</td>
+                                <td class="py-3 px-4 text-gray-700">{{ fraud.report_details }}</td>
+                                <td class="py-3 px-4">
+                                    {% if fraud.report_status == "Resolved" %}
+                                        <span class="px-2 py-1 text-green-700 bg-green-100 rounded-full font-semibold text-xs">Resolved</span>
+                                    {% elif fraud.report_status == "Pending" %}
+                                        <span class="px-2 py-1 text-yellow-700 bg-yellow-100 rounded-full font-semibold text-xs">Pending</span>
+                                    {% else %}
+                                        <span class="px-2 py-1 text-red-700 bg-red-100 rounded-full font-semibold text-xs">{{ fraud.report_status }}</span>
+                                    {% endif %}
+                                </td>
+                                <td class="py-3 px-4 text-gray-600">{{ fraud.reported_at }}</td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        {% else %}
+            <div class="bg-green-100 text-green-800 p-4 rounded text-center shadow">
+                ✅ No fraudulent transactions found.
+            </div>
+        {% endif %}
+
+        <div class="mt-6 text-center">
+            <a href="{{ url_for('dashboard') }}" class="inline-block bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded">
+                ← Back to Dashboard
+            </a>
+        </div>
+    </div>
+
+</body>
+</html>

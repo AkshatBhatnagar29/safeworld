@@ -1,0 +1,117 @@
+<!-- templates/pro_transaction.html -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Pro Transaction</title>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(to right, #dff6f0, #cce5ff);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+        }
+
+        .transaction-container {
+            background-color: white;
+            padding: 40px;
+            border-radius: 20px;
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.1);
+            width: 90%;
+            max-width: 400px;
+        }
+
+        h2 {
+            text-align: center;
+            color: #00796b;
+            margin-bottom: 25px;
+        }
+
+        label {
+            font-weight: bold;
+            color: #004d40;
+        }
+
+        input[type="text"],
+        input[type="number"] {
+            width: 100%;
+            padding: 10px;
+            margin-top: 5px;
+            margin-bottom: 20px;
+            border: 1px solid #b2dfdb;
+            border-radius: 8px;
+            box-sizing: border-box;
+        }
+
+        button {
+            width: 100%;
+            background-color: #0288d1;
+            color: white;
+            padding: 12px;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+        }
+
+        button:hover {
+            background-color: #0277bd;
+        }
+
+        .message {
+            color: red;
+            font-weight: bold;
+            text-align: center;
+            margin-bottom: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div class="transaction-container">
+        <h2>Make a Transaction</h2>
+        {% if message %}
+            <div class="message">{{ message }}</div>
+        {% endif %}
+
+        <form method="POST" action="/pro_transaction">
+            <label for="receiver_id">Receiver ID:</label>
+            <input type="number" name="receiver_id" required>
+
+            <label for="amount">Amount (Rs):</label>
+            <input type="number" name="amount" step="0.01" required>
+
+            <label for="transaction_type">Transaction Type:</label>
+            <input type="text" name="transaction_type" value="transfer" required>
+
+            <label for="location">Location:</label>
+            <input type="text" name="location" required>
+
+            <button type="submit">Submit Transaction</button>
+        </form>
+    </div>
+    {% if success %}
+
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+    {% with messages = get_flashed_messages() %}
+      {% if messages %}
+        <script>
+          Swal.fire({
+            title: 'Success!',
+            text: '{{ messages[0] }}',
+            icon: 'success',
+            confirmButtonText: 'OK'
+          });
+        </script>
+      {% endif %}
+    {% endwith %}
+    {% endif %}
+
+</body>
+</html>
